@@ -1,0 +1,1926 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="扣點系統" />
+    <meta name="theme-color" content="#1D9E75" />
+    <title>扣點系統</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        -webkit-tap-highlight-color: transparent;
+      }
+      :root {
+        --brand: #1d9e75;
+        --brand-light: #e1f5ee;
+        --brand-dark: #085041;
+        --danger: #e24b4a;
+        --danger-light: #fcebeb;
+        --warn: #ef9f27;
+        --warn-light: #faeeda;
+        --bg: #f5f5f0;
+        --surface: #ffffff;
+        --surface2: #f1efe8;
+        --text: #1a1a1a;
+        --text2: #666660;
+        --text3: #999994;
+        --border: rgba(0, 0, 0, 0.1);
+        --border2: rgba(0, 0, 0, 0.18);
+        --radius: 18px;
+        --radius-sm: 12px;
+        --radius-xs: 8px;
+        --discord: #5865f2;
+        --discord-light: #eef0fe;
+        --discord-border: rgba(88, 101, 242, 0.25);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #111110;
+          --surface: #1c1c1b;
+          --surface2: #242422;
+          --text: #f0eee8;
+          --text2: #a8a6a0;
+          --text3: #666662;
+          --border: rgba(255, 255, 255, 0.1);
+          --border2: rgba(255, 255, 255, 0.18);
+          --discord-light: #1a1d3a;
+          --discord-border: rgba(88, 101, 242, 0.35);
+        }
+      }
+      html,
+      body {
+        height: 100%;
+        overflow: hidden;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text',
+          'Helvetica Neue', sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        font-size: 16px;
+      }
+      .app {
+        height: 100vh;
+        height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        max-width: 430px;
+        margin: 0 auto;
+        position: relative;
+      }
+      .page {
+        display: none;
+        flex: 1;
+        flex-direction: column;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 88px;
+      }
+      .page.active {
+        display: flex;
+      }
+      .statusbar {
+        height: env(safe-area-inset-top, 44px);
+        min-height: 44px;
+        background: var(--surface);
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        padding: 0 20px 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text2);
+        flex-shrink: 0;
+      }
+      .page-header {
+        padding: 8px 20px 16px;
+        background: var(--surface);
+        border-bottom: 0.5px solid var(--border);
+      }
+      .page-title {
+        font-size: 30px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+      }
+      .page-sub {
+        font-size: 13px;
+        color: var(--text2);
+        margin-top: 2px;
+      }
+      .pts-hero {
+        margin: 16px;
+        border-radius: var(--radius);
+        padding: 28px 24px 24px;
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+      }
+      .pts-hero.ok {
+        background: linear-gradient(135deg, #1d9e75, #0f6e56);
+      }
+      .pts-hero.warn {
+        background: linear-gradient(135deg, #ef9f27, #ba7517);
+      }
+      .pts-hero.danger {
+        background: linear-gradient(135deg, #e24b4a, #a32d2d);
+      }
+      .pts-hero::before {
+        content: '';
+        position: absolute;
+        right: -40px;
+        top: -40px;
+        width: 160px;
+        height: 160px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .pts-hero::after {
+        content: '';
+        position: absolute;
+        left: -20px;
+        bottom: -50px;
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .pts-label {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        opacity: 0.8;
+        margin-bottom: 6px;
+      }
+      .pts-number {
+        font-size: 72px;
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: -2px;
+        position: relative;
+        z-index: 1;
+      }
+      .pts-unit {
+        font-size: 16px;
+        opacity: 0.75;
+        margin-top: 6px;
+      }
+      .pts-alert {
+        background: rgba(0, 0, 0, 0.18);
+        border-radius: var(--radius-xs);
+        padding: 10px 12px;
+        font-size: 13px;
+        margin-top: 16px;
+        position: relative;
+        z-index: 1;
+        line-height: 1.4;
+      }
+      .section {
+        padding: 0 16px;
+        margin-bottom: 4px;
+      }
+      .section-title {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text3);
+        padding: 16px 4px 8px;
+      }
+      .item-card {
+        background: var(--surface);
+        border-radius: var(--radius-sm);
+        padding: 14px 16px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border: 0.5px solid var(--border);
+      }
+      .item-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 12px;
+        background: var(--brand-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        flex-shrink: 0;
+      }
+      .item-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .item-name {
+        font-size: 15px;
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .item-pts-label {
+        font-size: 13px;
+        color: var(--text2);
+        margin-top: 2px;
+      }
+      .deduct-btn {
+        min-width: 64px;
+        height: 38px;
+        border-radius: var(--radius-xs);
+        background: var(--danger-light);
+        border: none;
+        color: var(--danger);
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: transform 0.1s, opacity 0.1s;
+        font-family: inherit;
+      }
+      .deduct-btn:active {
+        transform: scale(0.92);
+      }
+      .deduct-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+        transform: none;
+      }
+      .hist-card {
+        background: var(--surface);
+        border-radius: var(--radius-sm);
+        padding: 14px 16px;
+        margin-bottom: 8px;
+        border: 0.5px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .hist-dot {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 17px;
+        flex-shrink: 0;
+        font-weight: 700;
+      }
+      .hist-dot.minus {
+        background: var(--danger-light);
+        color: var(--danger);
+      }
+      .hist-dot.plus {
+        background: var(--brand-light);
+        color: var(--brand);
+      }
+      .hist-name {
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .hist-meta {
+        font-size: 12px;
+        color: var(--text2);
+        margin-top: 2px;
+      }
+      .hist-amount {
+        font-size: 17px;
+        font-weight: 700;
+        margin-left: auto;
+        flex-shrink: 0;
+      }
+      .hist-amount.minus {
+        color: var(--danger);
+      }
+      .hist-amount.plus {
+        color: var(--brand);
+      }
+      .hist-del-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        background: var(--danger-light);
+        color: var(--danger);
+        border: none;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        flex-shrink: 0;
+        margin-left: 8px;
+      }
+      .dev-card {
+        background: var(--surface);
+        border-radius: var(--radius-sm);
+        border: 0.5px solid var(--border);
+        padding: 16px;
+        margin: 0 16px 12px;
+      }
+      .dev-card-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text2);
+        margin-bottom: 12px;
+      }
+      .stat-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin: 0 16px 12px;
+      }
+      .stat-box {
+        background: var(--surface);
+        border: 0.5px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 14px 16px;
+      }
+      .stat-box-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text3);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+      }
+      .stat-box-val {
+        font-size: 28px;
+        font-weight: 700;
+        letter-spacing: -1px;
+      }
+      .field {
+        width: 100%;
+        height: 46px;
+        padding: 0 14px;
+        border: 0.5px solid var(--border2);
+        border-radius: var(--radius-xs);
+        font-size: 15px;
+        background: var(--surface);
+        color: var(--text);
+        font-family: inherit;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      .field:focus {
+        border-color: var(--brand);
+      }
+      .row2 {
+        display: flex;
+        gap: 8px;
+      }
+      .row2 .field {
+        margin-bottom: 0;
+      }
+      .btn {
+        width: 100%;
+        height: 50px;
+        border-radius: var(--radius-sm);
+        border: none;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.12s, opacity 0.12s;
+        font-family: inherit;
+      }
+      .btn:active {
+        transform: scale(0.97);
+        opacity: 0.9;
+      }
+      .btn.green {
+        background: var(--brand);
+        color: #fff;
+      }
+      .btn.outline {
+        background: transparent;
+        border: 0.5px solid var(--border2);
+        color: var(--text);
+      }
+      .notif-bar {
+        margin: 0 16px 12px;
+        border-radius: var(--radius-sm);
+        padding: 12px 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        font-weight: 500;
+      }
+      .notif-bar.pending {
+        background: var(--warn-light);
+        color: #854f0b;
+      }
+      .notif-bar.on {
+        background: var(--brand-light);
+        color: var(--brand-dark);
+      }
+      .notif-bar-btn {
+        margin-left: auto;
+        background: var(--warn);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-xs);
+        padding: 7px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        white-space: nowrap;
+      }
+      .dc-card {
+        background: var(--discord-light);
+        border-radius: var(--radius-sm);
+        border: 0.5px solid var(--discord-border);
+        padding: 16px;
+        margin: 0 16px 12px;
+      }
+      .dc-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .dc-logo {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: var(--discord);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .dc-logo svg {
+        width: 22px;
+        height: 22px;
+        fill: white;
+      }
+      .dc-title {
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .dc-sub {
+        font-size: 12px;
+        color: var(--text2);
+        margin-top: 1px;
+      }
+      .dc-toggle {
+        margin-left: auto;
+        position: relative;
+        width: 44px;
+        height: 26px;
+        flex-shrink: 0;
+      }
+      .dc-toggle input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        position: absolute;
+      }
+      .dc-slider {
+        position: absolute;
+        inset: 0;
+        border-radius: 13px;
+        background: var(--border2);
+        transition: 0.2s;
+        cursor: pointer;
+      }
+      .dc-slider::before {
+        content: '';
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        left: 3px;
+        top: 3px;
+        border-radius: 50%;
+        background: #fff;
+        transition: 0.2s;
+      }
+      .dc-toggle input:checked + .dc-slider {
+        background: var(--discord);
+      }
+      .dc-toggle input:checked + .dc-slider::before {
+        transform: translateX(18px);
+      }
+      .dc-body {
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 0.5px solid var(--discord-border);
+      }
+      .dc-hint {
+        font-size: 12px;
+        color: var(--text2);
+        margin-bottom: 10px;
+        line-height: 1.5;
+      }
+      .dc-field {
+        width: 100%;
+        height: 44px;
+        padding: 0 12px;
+        border: 0.5px solid var(--discord-border);
+        border-radius: var(--radius-xs);
+        font-size: 13px;
+        background: var(--surface);
+        color: var(--text);
+        font-family: inherit;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      .dc-field:focus {
+        border-color: var(--discord);
+      }
+      .dc-btn-row {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .dc-save {
+        flex: 1;
+        height: 42px;
+        border-radius: var(--radius-xs);
+        border: none;
+        background: var(--discord);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition: opacity 0.15s;
+      }
+      .dc-save:active {
+        opacity: 0.8;
+      }
+      .dc-test {
+        height: 42px;
+        padding: 0 16px;
+        border-radius: var(--radius-xs);
+        border: 0.5px solid var(--discord-border);
+        background: transparent;
+        color: var(--discord);
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        white-space: nowrap;
+      }
+      .dc-status {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 10px;
+      }
+      .dc-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--text3);
+        flex-shrink: 0;
+        transition: background 0.2s;
+      }
+      .dc-dot.ok {
+        background: #1d9e75;
+      }
+      .dc-dot.err {
+        background: var(--danger);
+      }
+      .dc-dot.spin {
+        background: var(--discord);
+        animation: pulse 1s infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+      .dc-status-txt {
+        font-size: 12px;
+        color: var(--text2);
+      }
+      .dev-item-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 0;
+        border-bottom: 0.5px solid var(--border);
+      }
+      .dev-item-row:last-child {
+        border-bottom: none;
+      }
+      .dev-pts-inp {
+        width: 74px;
+        height: 38px;
+        border: 0.5px solid var(--border2);
+        border-radius: var(--radius-xs);
+        font-size: 15px;
+        padding: 0 10px;
+        background: var(--surface);
+        color: var(--text);
+        font-family: inherit;
+        outline: none;
+      }
+      .del-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: var(--radius-xs);
+        border: none;
+        background: var(--danger-light);
+        color: var(--danger);
+        font-size: 20px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .login-wrap {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 28px;
+      }
+      .login-logo {
+        width: 80px;
+        height: 80px;
+        border-radius: 22px;
+        background: var(--brand);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 22px;
+      }
+      .login-logo svg {
+        width: 40px;
+        height: 40px;
+      }
+      .login-title {
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+      .login-sub {
+        font-size: 14px;
+        color: var(--text2);
+        text-align: center;
+        margin-bottom: 30px;
+        line-height: 1.5;
+      }
+      .navbar {
+        position: fixed;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        max-width: 430px;
+        background: var(--surface);
+        border-top: 0.5px solid var(--border);
+        display: flex;
+        padding: 8px 0;
+        padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+        z-index: 100;
+      }
+      .nav-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        cursor: pointer;
+        padding: 4px 0;
+        color: var(--text3);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        transition: color 0.15s;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .nav-item.active {
+        color: var(--brand);
+      }
+      .nav-icon svg {
+        width: 24px;
+        height: 24px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .toast {
+        position: fixed;
+        bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(20, 20, 20, 0.88);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        color: #fff;
+        padding: 11px 22px;
+        border-radius: 99px;
+        font-size: 14px;
+        font-weight: 500;
+        white-space: nowrap;
+        z-index: 999;
+        opacity: 0;
+        transition: opacity 0.2s;
+        pointer-events: none;
+        max-width: calc(100% - 40px);
+      }
+      .toast.show {
+        opacity: 1;
+      }
+      .empty {
+        text-align: center;
+        padding: 32px 20px;
+        color: var(--text3);
+        font-size: 14px;
+      }
+      .add-divider {
+        border-top: 0.5px solid var(--border);
+        padding-top: 14px;
+        margin-top: 6px;
+      }
+      .add-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text2);
+        margin-bottom: 10px;
+      }
+      .loading-overlay {
+        position: fixed;
+        inset: 0;
+        background: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .loading-spinner {
+        width: 36px;
+        height: 36px;
+        border: 3px solid var(--border);
+        border-top-color: var(--brand);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .loading-txt {
+        font-size: 14px;
+        color: var(--text2);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="loading-overlay" id="loading-overlay">
+      <div class="loading-spinner"></div>
+      <div class="loading-txt">連線中...</div>
+    </div>
+
+    <div class="app">
+      <div class="statusbar">
+        <span id="clock">9:41</span>
+        <span>扣點系統</span>
+        <span>●●●</span>
+      </div>
+      <div id="toast" class="toast"></div>
+
+      <div
+        id="pg-login"
+        class="page active"
+        style="justify-content: center; padding-bottom: 0"
+      >
+        <div class="login-wrap">
+          <div class="login-logo">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+              <polyline points="10 17 15 12 10 7" />
+              <line x1="15" y1="12" x2="3" y2="12" />
+            </svg>
+          </div>
+          <div class="login-title">系統登入</div>
+          <div class="login-sub">
+            請輸入使用者或開發者專屬帳號<br />以進入扣點系統
+          </div>
+          <input
+            class="field"
+            id="sys-account-inp"
+            placeholder="輸入帳號"
+            style="width: 100%; max-width: 320px; margin-bottom: 12px"
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false"
+          />
+          <button
+            class="btn green"
+            style="max-width: 320px"
+            onclick="sysLogin()"
+          >
+            登入
+          </button>
+        </div>
+      </div>
+
+      <div id="pg-user" class="page">
+        <div class="page-header">
+          <div class="page-title">我的點數</div>
+          <div class="page-sub" id="today-date"></div>
+        </div>
+        <div id="pts-hero-wrap"></div>
+        <div class="section">
+          <div class="section-title">扣點項目</div>
+          <div id="items-user"></div>
+        </div>
+        <div class="section">
+          <div class="section-title">最近紀錄</div>
+          <div id="hist-recent"></div>
+        </div>
+        <div style="padding: 16px; margin-top: 10px">
+          <button
+            class="btn outline"
+            onclick="sysLogout()"
+            style="
+              color: var(--danger);
+              border-color: var(--danger-light);
+              background: var(--danger-light);
+            "
+          >
+            登出系統
+          </button>
+        </div>
+      </div>
+
+      <div id="pg-hist" class="page">
+        <div class="page-header">
+          <div class="page-title">紀錄</div>
+          <div class="page-sub" id="hist-count"></div>
+        </div>
+        <div class="section" style="margin-top: 12px">
+          <div id="hist-all"></div>
+        </div>
+      </div>
+
+      <div id="pg-dev" class="page">
+        <div id="dev-panel" style="display: block; padding-bottom: 100px">
+          <div class="page-header">
+            <div class="page-title">後台管理</div>
+            <div class="page-sub" id="dev-welcome"></div>
+          </div>
+          <div style="height: 12px"></div>
+          <div id="notif-bar-area"></div>
+
+          <div class="dc-card">
+            <div class="dc-header">
+              <div class="dc-logo">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <div class="dc-title">Discord 通知</div>
+                <div class="dc-sub" id="dc-sub">未設定</div>
+              </div>
+              <label class="dc-toggle">
+                <input
+                  type="checkbox"
+                  id="dc-cb"
+                  onchange="dcToggle(this.checked)"
+                />
+                <span class="dc-slider"></span>
+              </label>
+            </div>
+            <div class="dc-body">
+              <div class="dc-hint">
+                貼上 Discord Webhook 網址，每次扣點時會自動發送通知到指定頻道。
+              </div>
+              <input
+                class="dc-field"
+                id="dc-url-inp"
+                placeholder="https://discord.com/api/webhooks/..."
+                autocomplete="off"
+                autocorrect="off"
+                spellcheck="false"
+              />
+              <div class="dc-btn-row">
+                <button class="dc-save" onclick="dcSave()">儲存</button>
+                <button class="dc-test" onclick="dcTest()">發送測試</button>
+              </div>
+              <div class="dc-status">
+                <div class="dc-dot" id="dc-dot"></div>
+                <span class="dc-status-txt" id="dc-txt">尚未設定</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-grid">
+            <div class="stat-box">
+              <div class="stat-box-label">目前點數</div>
+              <div class="stat-box-val" id="dev-pts">-</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-box-label">扣點次數</div>
+              <div class="stat-box-val" id="dev-count">-</div>
+            </div>
+          </div>
+
+          <div class="dev-card">
+            <div class="dev-card-title">手動更改目前點數</div>
+            <div class="row2">
+              <input
+                class="field"
+                type="number"
+                id="set-pts-inp"
+                placeholder="輸入新的總點數"
+                min="0"
+                style="flex: 2"
+              />
+              <button class="btn green" style="flex: 1" onclick="setPoints()">
+                設定
+              </button>
+            </div>
+          </div>
+
+          <div class="dev-card">
+            <div class="dev-card-title">定期自動發放點數</div>
+            <div
+              style="font-size: 13px; color: var(--text2); margin-bottom: 10px"
+            >
+              目前設定：每 <strong id="cur-auto-mo">0</strong> 個月，自動發放
+              <strong id="cur-auto-pts">0</strong> 點。
+            </div>
+            <div class="row2" style="margin-bottom: 10px">
+              <input
+                class="field"
+                type="number"
+                id="auto-mo-inp"
+                placeholder="幾個月"
+                min="1"
+                style="flex: 1"
+              />
+              <input
+                class="field"
+                type="number"
+                id="auto-pts-inp"
+                placeholder="發放點數"
+                min="1"
+                style="flex: 1"
+              />
+            </div>
+            <div class="row2">
+              <button class="btn green" style="flex: 2" onclick="saveAutoAdd()">
+                儲存設定
+              </button>
+              <button
+                class="btn outline"
+                style="
+                  flex: 1;
+                  color: var(--danger);
+                  border-color: var(--danger-light);
+                  background: var(--danger-light);
+                "
+                onclick="clearAutoAdd()"
+              >
+                停用
+              </button>
+            </div>
+          </div>
+
+          <div class="dev-card">
+            <div class="dev-card-title">管理扣點項目</div>
+            <div id="dev-items-list"></div>
+            <div class="add-divider">
+              <div class="add-label">新增項目</div>
+              <div class="row2" style="margin-bottom: 10px">
+                <input
+                  class="field"
+                  type="text"
+                  id="new-name-inp"
+                  placeholder="項目名稱"
+                  style="flex: 2"
+                  autocorrect="off"
+                />
+                <input
+                  class="field"
+                  type="number"
+                  id="new-pts-inp"
+                  placeholder="點數"
+                  min="1"
+                  style="flex: 1"
+                />
+              </div>
+              <button class="btn green" onclick="addItem()">新增項目</button>
+            </div>
+          </div>
+          <div class="section">
+            <div
+              class="section-title"
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+              "
+            >
+              <span>完整扣點紀錄</span>
+              <button
+                onclick="clearHistory()"
+                style="
+                  font-size: 12px;
+                  font-weight: 600;
+                  color: var(--danger);
+                  background: var(--danger-light);
+                  border: none;
+                  border-radius: var(--radius-xs);
+                  padding: 5px 12px;
+                  cursor: pointer;
+                  font-family: inherit;
+                "
+              >
+                全部清除
+              </button>
+            </div>
+            <div id="dev-hist-list"></div>
+          </div>
+          <div style="padding: 0 16px 16px">
+            <button
+              class="btn outline"
+              onclick="sysLogout()"
+              style="
+                color: var(--danger);
+                border-color: var(--danger-light);
+                background: var(--danger-light);
+              "
+            >
+              登出系統
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <nav class="navbar" id="main-nav" style="display: none">
+        <div class="nav-item active" id="nav-user" onclick="go('user')">
+          <div class="nav-icon">
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+            </svg>
+          </div>
+          我的點數
+        </div>
+        <div class="nav-item" id="nav-hist" onclick="go('hist')">
+          <div class="nav-icon">
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="9" />
+              <polyline points="12 7 12 12 15 15" />
+            </svg>
+          </div>
+          紀錄
+        </div>
+        <div class="nav-item" id="nav-dev" onclick="go('dev')">
+          <div class="nav-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z" />
+              <path d="m9 12 2 2 4-4" />
+            </svg>
+          </div>
+          後台
+        </div>
+      </nav>
+    </div>
+
+    <script>
+      // ─── Supabase 設定 ───
+      const SUPABASE_URL = 'https://wirfyxsipylpxropetcm.supabase.co';
+      const SUPABASE_KEY =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndpcmZ5eHNpcHlscHhyb3BldGNtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzA1NDgsImV4cCI6MjA5MDgwNjU0OH0.eQy4jtM6SUYznGudS-0li2ERbXWD7TRSSP3rKsajgl8';
+      const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+      const ICONS = [
+        '⚡',
+        '🎯',
+        '🔥',
+        '💎',
+        '🌟',
+        '🎮',
+        '📦',
+        '🛒',
+        '🎪',
+        '🧩',
+      ];
+
+      // 記憶體中的狀態
+      let S = {
+        points: 100,
+        items: [],
+        history: [],
+        currentUser: null,
+        dcUrl: '',
+        dcOn: true,
+        autoAdd: { months: 0, pts: 0, lastAdded: null },
+      };
+
+      // 從 localStorage 取登入狀態（不需要存到 Supabase）
+      function loadSession() {
+        try {
+          return localStorage.getItem('pts_user') || null;
+        } catch {
+          return null;
+        }
+      }
+      function saveSession(u) {
+        try {
+          if (u) localStorage.setItem('pts_user', u);
+          else localStorage.removeItem('pts_user');
+        } catch {}
+      }
+
+      // ─── Supabase 資料讀取 ───
+      async function dbLoad() {
+        // 讀取 app_state
+        const { data: stateData } = await sb
+          .from('app_state')
+          .select('*')
+          .eq('id', 'main')
+          .single();
+        if (stateData) {
+          S.points = stateData.points;
+          S.dcUrl = stateData.dc_url || '';
+          S.dcOn = stateData.dc_on !== false;
+          S.autoAdd = {
+            months: stateData.auto_add_months || 0,
+            pts: stateData.auto_add_pts || 0,
+            lastAdded: stateData.auto_add_last
+              ? new Date(stateData.auto_add_last).getTime()
+              : null,
+          };
+        } else {
+          // 第一次使用，建立預設資料
+          await sb.from('app_state').insert({ id: 'main', points: 100 });
+        }
+
+        // 讀取 items
+        const { data: itemsData } = await sb
+          .from('items')
+          .select('*')
+          .order('sort_order');
+        if (itemsData && itemsData.length > 0) {
+          S.items = itemsData.map((i) => ({
+            id: i.id,
+            name: i.name,
+            pts: i.pts,
+            icon: i.icon || '⚡',
+          }));
+        } else {
+          // 預設項目
+          const defaults = [
+            {
+              id: Date.now(),
+              name: '去洗澡',
+              pts: 10,
+              icon: '⚡',
+              sort_order: 0,
+            },
+            {
+              id: Date.now() + 1,
+              name: '別生氣啦！',
+              pts: 20,
+              icon: '🎯',
+              sort_order: 1,
+            },
+            {
+              id: Date.now() + 2,
+              name: '生產力！',
+              pts: 50,
+              icon: '🔥',
+              sort_order: 2,
+            },
+          ];
+          await sb.from('items').insert(defaults);
+          S.items = defaults.map((i) => ({
+            id: i.id,
+            name: i.name,
+            pts: i.pts,
+            icon: i.icon,
+          }));
+        }
+
+        // 讀取 history（最新 200 筆）
+        const { data: histData } = await sb
+          .from('history')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(200);
+        if (histData) {
+          S.history = histData
+            .map((h) => ({
+              id: h.id,
+              type: h.type,
+              name: h.name,
+              pts: h.pts,
+              after: h.after_pts,
+              time: h.time,
+            }))
+            .reverse();
+        }
+      }
+
+      async function dbSaveState() {
+        await sb.from('app_state').upsert({
+          id: 'main',
+          points: S.points,
+          dc_url: S.dcUrl,
+          dc_on: S.dcOn,
+          auto_add_months: S.autoAdd.months,
+          auto_add_pts: S.autoAdd.pts,
+          auto_add_last: S.autoAdd.lastAdded
+            ? new Date(S.autoAdd.lastAdded).toISOString()
+            : null,
+        });
+      }
+
+      async function dbAddHistory(h) {
+        await sb.from('history').insert({
+          id: h.id,
+          type: h.type,
+          name: h.name,
+          pts: h.pts,
+          after_pts: h.after,
+          time: h.time,
+        });
+      }
+
+      async function dbDelHistory(id) {
+        await sb.from('history').delete().eq('id', id);
+      }
+
+      async function dbClearHistory() {
+        await sb.from('history').delete().neq('id', 0);
+      }
+
+      async function dbAddItem(item) {
+        await sb
+          .from('items')
+          .insert({
+            id: item.id,
+            name: item.name,
+            pts: item.pts,
+            icon: item.icon,
+            sort_order: S.items.length,
+          });
+      }
+
+      async function dbUpdateItem(id, pts) {
+        await sb.from('items').update({ pts }).eq('id', id);
+      }
+
+      async function dbDelItem(id) {
+        await sb.from('items').delete().eq('id', id);
+      }
+
+      // ─── UI 工具 ───
+      function toast(msg, dur = 2400) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(t._t);
+        t._t = setTimeout(() => t.classList.remove('show'), dur);
+      }
+
+      function ts() {
+        return new Date().toLocaleString('zh-TW', {
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+      }
+
+      // ─── 登入 ───
+      async function sysLogin() {
+        const acc = document.getElementById('sys-account-inp').value.trim();
+        if (acc === 'mark0418' || acc === 'papa') {
+          S.currentUser = acc;
+          saveSession(acc);
+          document.getElementById('sys-account-inp').value = '';
+          toast('登入成功！歡迎 ' + acc);
+          await checkAutoAdd();
+          initApp();
+        } else {
+          toast('⚠️ 帳號錯誤，請重新輸入');
+        }
+      }
+
+      function sysLogout() {
+        S.currentUser = null;
+        saveSession(null);
+        toast('已登出系統');
+        initApp();
+      }
+
+      function initApp() {
+        if (!S.currentUser) {
+          document.getElementById('main-nav').style.display = 'none';
+          go('login');
+        } else {
+          document.getElementById('main-nav').style.display = 'flex';
+          if (S.currentUser === 'mark0418') {
+            document.getElementById('nav-dev').style.display = 'none';
+            go('user');
+          } else if (S.currentUser === 'papa') {
+            document.getElementById('nav-dev').style.display = 'flex';
+            document.getElementById('dev-welcome').textContent =
+              '歡迎，開發者 papa';
+            go('dev');
+          }
+        }
+      }
+
+      // ─── 自動增加點數 ───
+      async function checkAutoAdd() {
+        if (!S.autoAdd.months || !S.autoAdd.pts) return;
+        if (!S.autoAdd.lastAdded) {
+          S.autoAdd.lastAdded = Date.now();
+          await dbSaveState();
+          return;
+        }
+        let last = new Date(S.autoAdd.lastAdded);
+        let now = new Date();
+        let nextAdd = new Date(last);
+        nextAdd.setMonth(nextAdd.getMonth() + S.autoAdd.months);
+        let totalAdded = 0;
+        while (now >= nextAdd) {
+          S.points += S.autoAdd.pts;
+          totalAdded += S.autoAdd.pts;
+          const h = {
+            id: Date.now() + Math.random(),
+            type: 'add',
+            name: `系統定期自動發放 (${S.autoAdd.months}個月)`,
+            pts: S.autoAdd.pts,
+            after: S.points,
+            time: ts(),
+          };
+          S.history.push(h);
+          await dbAddHistory(h);
+          S.autoAdd.lastAdded = nextAdd.getTime();
+          nextAdd.setMonth(nextAdd.getMonth() + S.autoAdd.months);
+        }
+        if (totalAdded > 0) {
+          await dbSaveState();
+          setTimeout(
+            () =>
+              toast(
+                `🎉 系統已自動補發 ${totalAdded} 點！目前共 ${S.points} 點`
+              ),
+            800
+          );
+        }
+      }
+
+      function renderAutoAdd() {
+        document.getElementById('cur-auto-mo').textContent =
+          S.autoAdd.months || 0;
+        document.getElementById('cur-auto-pts').textContent =
+          S.autoAdd.pts || 0;
+      }
+
+      async function saveAutoAdd() {
+        const m = parseInt(document.getElementById('auto-mo-inp').value);
+        const p = parseInt(document.getElementById('auto-pts-inp').value);
+        if (isNaN(m) || m < 1 || isNaN(p) || p < 1) {
+          toast('請輸入大於 0 的有效數字');
+          return;
+        }
+        S.autoAdd.months = m;
+        S.autoAdd.pts = p;
+        S.autoAdd.lastAdded = Date.now();
+        await dbSaveState();
+        document.getElementById('auto-mo-inp').value = '';
+        document.getElementById('auto-pts-inp').value = '';
+        toast(`✅ 已設定每 ${m} 個月自動增加 ${p} 點`);
+        renderAutoAdd();
+      }
+
+      async function clearAutoAdd() {
+        S.autoAdd.months = 0;
+        S.autoAdd.pts = 0;
+        await dbSaveState();
+        toast('已停用定期發放點數');
+        renderAutoAdd();
+      }
+
+      // ─── Discord ───
+      function dcSetStatus(type, msg) {
+        const dot = document.getElementById('dc-dot');
+        const txt = document.getElementById('dc-txt');
+        if (!dot || !txt) return;
+        dot.className = 'dc-dot' + (type ? ' ' + type : '');
+        txt.textContent = msg;
+      }
+
+      function dcUpdateSub() {
+        const el = document.getElementById('dc-sub');
+        if (!el) return;
+        if (!S.dcUrl) {
+          el.textContent = '未設定';
+          return;
+        }
+        el.textContent = S.dcOn ? '通知開啟中' : '通知已關閉';
+      }
+
+      function dcRender() {
+        const cb = document.getElementById('dc-cb');
+        const inp = document.getElementById('dc-url-inp');
+        if (cb) cb.checked = !!S.dcOn;
+        if (inp && S.dcUrl) inp.value = S.dcUrl;
+        dcUpdateSub();
+        if (S.dcUrl) dcSetStatus('ok', 'Webhook 已設定');
+        else dcSetStatus('', '尚未設定 Webhook 網址');
+      }
+
+      async function dcToggle(on) {
+        S.dcOn = on;
+        await dbSaveState();
+        dcUpdateSub();
+        toast(on ? 'Discord 通知已開啟 🔔' : 'Discord 通知已關閉');
+      }
+
+      async function dcSave() {
+        const url = document.getElementById('dc-url-inp').value.trim();
+        if (!url) {
+          toast('請貼上 Webhook 網址');
+          return;
+        }
+        if (!url.startsWith('https://discord.com/api/webhooks/')) {
+          toast('網址格式不正確');
+          return;
+        }
+        S.dcUrl = url;
+        S.dcOn = true;
+        await dbSaveState();
+        document.getElementById('dc-cb').checked = true;
+        dcUpdateSub();
+        toast('已儲存，發送測試訊息中...');
+        dcSend(
+          {
+            embeds: [
+              {
+                title: '✅ 連線測試成功',
+                description: 'Discord 通知已成功設定！',
+                color: 0x1d9e75,
+                footer: { text: '扣點系統' },
+              },
+            ],
+          },
+          (ok) => {
+            if (ok) dcSetStatus('ok', '測試訊息已送出 ✓');
+            else dcSetStatus('err', '發送失敗，請確認網址是否正確');
+          }
+        );
+      }
+
+      function dcTest() {
+        if (!S.dcUrl) {
+          toast('請先設定 Webhook 網址');
+          return;
+        }
+        toast('發送測試訊息中...');
+        dcSetStatus('spin', '發送中...');
+        dcSend(
+          {
+            embeds: [
+              {
+                title: '🔔 測試通知',
+                description: '這是一則測試訊息，Discord 通知運作正常！',
+                color: 0x5865f2,
+                footer: { text: '扣點系統 · ' + ts() },
+              },
+            ],
+          },
+          (ok) => {
+            if (ok) {
+              dcSetStatus('ok', '測試成功 ✓');
+              toast('測試訊息已送出 ✓');
+            } else {
+              dcSetStatus('err', '發送失敗');
+              toast('發送失敗，請確認 Webhook 網址');
+            }
+          }
+        );
+      }
+
+      async function dcSend(payload, cb) {
+        if (!S.dcUrl) return cb && cb(false);
+        try {
+          const r = await fetch(S.dcUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          cb && cb(r.ok || r.status === 204);
+        } catch {
+          try {
+            await fetch(S.dcUrl, {
+              method: 'POST',
+              mode: 'no-cors',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+            cb && cb(true);
+          } catch {
+            cb && cb(false);
+          }
+        }
+      }
+
+      function dcNotify(itemName, pts, remaining) {
+        if (!S.dcOn || !S.dcUrl) return;
+        const timeStr = new Date().toLocaleString('zh-TW', {
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+        const lowWarn = remaining <= 20 ? '\n⚠️ 點數偏低，請記得補充！' : '';
+        const userText =
+          S.currentUser === 'papa'
+            ? '開發者 (papa)'
+            : S.currentUser || '未知使用者';
+        dcSend(
+          {
+            username: '扣點系統',
+            embeds: [
+              {
+                title: '🔔 有人扣點了！',
+                color:
+                  remaining <= 0
+                    ? 0xe24b4a
+                    : remaining <= 20
+                    ? 0xef9f27
+                    : 0x5865f2,
+                fields: [
+                  {
+                    name: '使用者',
+                    value: '**' + userText + '**',
+                    inline: true,
+                  },
+                  {
+                    name: '扣點項目',
+                    value: '**' + itemName + '**',
+                    inline: true,
+                  },
+                  {
+                    name: '扣除點數',
+                    value: '**−' + pts + ' 點**',
+                    inline: true,
+                  },
+                  {
+                    name: '剩餘點數',
+                    value: '**' + remaining + ' 點**',
+                    inline: true,
+                  },
+                ],
+                description: lowWarn || undefined,
+                footer: { text: '扣點系統 · ' + timeStr },
+              },
+            ],
+          },
+          (ok) => {
+            if (ok) dcSetStatus('ok', '上次發送：' + timeStr.slice(6));
+            else dcSetStatus('err', '發送失敗（' + timeStr.slice(6) + '）');
+          }
+        );
+      }
+
+      // ─── Render ───
+      function histRowHTML(h, isDev = false) {
+        const m = h.type === 'deduct';
+        const delBtn = isDev
+          ? `<button class="hist-del-btn" onclick="delHist(${h.id})">×</button>`
+          : '';
+        return `<div class="hist-card">
+    <div class="hist-dot ${m ? 'minus' : 'plus'}">${m ? '−' : '+'}</div>
+    <div style="flex:1;min-width:0;">
+      <div class="hist-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${
+        h.name
+      }</div>
+      <div class="hist-meta">${h.time}　剩 ${h.after} 點</div>
+    </div>
+    <div class="hist-amount ${m ? 'minus' : 'plus'}">${m ? '−' : '+'}${
+          h.pts
+        }</div>
+    ${delBtn}
+  </div>`;
+      }
+
+      function renderUser() {
+        const p = S.points;
+        let cls = 'ok',
+          al = '';
+        if (p <= 0) {
+          cls = 'danger';
+          al = '<div class="pts-alert">⚠️ 點數已用盡，請聯絡開發者補充</div>';
+        } else if (p <= 20) {
+          cls = 'warn';
+          al =
+            '<div class="pts-alert">⚠️ 點數偏低（' +
+            p +
+            ' 點），請盡快補充</div>';
+        }
+        document.getElementById('pts-hero-wrap').innerHTML = `
+    <div class="pts-hero ${cls}" style="margin:14px 16px;">
+      <div class="pts-label">剩餘點數</div>
+      <div class="pts-number">${p}</div>
+      <div class="pts-unit">點</div>${al}
+    </div>`;
+        const el = document.getElementById('items-user');
+        if (!S.items.length) {
+          el.innerHTML =
+            '<div class="empty">尚無扣點項目<br>請至後台新增</div>';
+          return;
+        }
+        el.innerHTML = S.items
+          .map(
+            (it) => `
+    <div class="item-card">
+      <div class="item-icon">${it.icon || '⚡'}</div>
+      <div class="item-info">
+        <div class="item-name">${it.name}</div>
+        <div class="item-pts-label">扣 ${it.pts} 點</div>
+      </div>
+      <button class="deduct-btn" onclick="deduct(${it.id})" ${
+              p < it.pts ? 'disabled' : ''
+            }>扣點</button>
+    </div>`
+          )
+          .join('');
+        const hr = document.getElementById('hist-recent');
+        const recent = [...S.history].reverse().slice(0, 3);
+        hr.innerHTML = recent.length
+          ? recent.map((h) => histRowHTML(h, false)).join('')
+          : '<div class="empty">尚無紀錄</div>';
+        const dateStr = new Date().toLocaleDateString('zh-TW', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          weekday: 'short',
+        });
+        const userTag = S.currentUser
+          ? ` (${S.currentUser === 'papa' ? '開發者' : '使用者'})`
+          : '';
+        document.getElementById('today-date').textContent = dateStr + userTag;
+      }
+
+      function renderHist() {
+        const sorted = [...S.history].reverse();
+        document.getElementById('hist-count').textContent =
+          '共 ' + sorted.length + ' 筆記錄';
+        document.getElementById('hist-all').innerHTML = sorted.length
+          ? sorted.map((h) => histRowHTML(h, false)).join('')
+          : '<div class="empty">尚無紀錄</div>';
+      }
+
+      function renderDev() {
+        document.getElementById('dev-pts').textContent = S.points;
+        document.getElementById('dev-count').textContent = S.history.filter(
+          (h) => h.type === 'deduct'
+        ).length;
+        let nb = '';
+        if (typeof Notification === 'undefined') {
+          nb =
+            '<div class="notif-bar pending" style="margin:0 16px 12px;"><span>此瀏覽器不支援推播通知</span></div>';
+        } else {
+          nb =
+            '<div class="notif-bar on" style="margin:0 16px 12px;"><span>🔔 瀏覽器通知狀態：' +
+            (Notification.permission === 'granted' ? '已啟用' : '未啟用') +
+            '</span></div>';
+        }
+        document.getElementById('notif-bar-area').innerHTML = nb;
+        dcRender();
+        renderAutoAdd();
+        document.getElementById('dev-items-list').innerHTML = S.items.length
+          ? S.items
+              .map(
+                (it) => `
+    <div class="dev-item-row">
+      <span style="font-size:22px;flex-shrink:0;">${it.icon || '⚡'}</span>
+      <span style="flex:1;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${
+        it.name
+      }</span>
+      <input class="dev-pts-inp" type="number" value="${
+        it.pts
+      }" min="1" onchange="updatePts(${it.id},this.value)"/>
+      <button class="del-btn" onclick="delItem(${it.id})">×</button>
+    </div>`
+              )
+              .join('')
+          : '<div class="empty" style="padding:12px 0;">尚無項目</div>';
+        const sorted = [...S.history].reverse();
+        document.getElementById('dev-hist-list').innerHTML = sorted.length
+          ? sorted.map((h) => histRowHTML(h, true)).join('')
+          : '<div class="empty">尚無紀錄</div>';
+      }
+
+      // ─── 動作 ───
+      async function deduct(id) {
+        const it = S.items.find((i) => i.id === id);
+        if (!it) return;
+        if (S.points < it.pts) {
+          toast('⚠️ 點數不足！');
+          return;
+        }
+        S.points -= it.pts;
+        const h = {
+          id: Date.now(),
+          type: 'deduct',
+          name: it.name,
+          pts: it.pts,
+          after: S.points,
+          time: ts(),
+        };
+        S.history.push(h);
+        await dbSaveState();
+        await dbAddHistory(h);
+        toast('已扣 ' + it.pts + ' 點（' + it.name + '）');
+        dcNotify(it.name, it.pts, S.points);
+        renderUser();
+        if (document.getElementById('pg-dev').classList.contains('active'))
+          renderDev();
+      }
+
+      async function setPoints() {
+        const v = parseInt(document.getElementById('set-pts-inp').value);
+        if (isNaN(v) || v < 0) {
+          toast('請輸入有效的點數（大於等於 0）');
+          return;
+        }
+        const diff = v - S.points;
+        if (diff === 0) {
+          toast('點數沒有變更');
+          return;
+        }
+        const h = {
+          id: Date.now(),
+          type: diff > 0 ? 'add' : 'deduct',
+          name: '開發者手動更改總點數',
+          pts: Math.abs(diff),
+          after: v,
+          time: ts(),
+        };
+        S.history.push(h);
+        S.points = v;
+        await dbSaveState();
+        await dbAddHistory(h);
+        document.getElementById('set-pts-inp').value = '';
+        toast(`✅ 點數已更新為 ${v} 點`);
+        renderDev();
+        renderUser();
+      }
+
+      async function addItem() {
+        const name = document.getElementById('new-name-inp').value.trim();
+        const pts = parseInt(document.getElementById('new-pts-inp').value);
+        if (!name || !pts || pts < 1) {
+          toast('請填寫名稱與點數');
+          return;
+        }
+        const item = {
+          id: Date.now(),
+          name,
+          pts,
+          icon: ICONS[S.items.length % ICONS.length],
+        };
+        S.items.push(item);
+        await dbAddItem(item);
+        document.getElementById('new-name-inp').value = '';
+        document.getElementById('new-pts-inp').value = '';
+        toast('已新增「' + name + '」');
+        renderDev();
+        renderUser();
+      }
+
+      async function updatePts(id, val) {
+        const v = parseInt(val);
+        if (!v || v < 1) return;
+        const it = S.items.find((i) => i.id === id);
+        if (it) {
+          it.pts = v;
+          await dbUpdateItem(id, v);
+          renderUser();
+        }
+      }
+
+      async function delItem(id) {
+        if (!confirm('確定刪除此項目？')) return;
+        S.items = S.items.filter((i) => i.id !== id);
+        await dbDelItem(id);
+        toast('已刪除');
+        renderDev();
+        renderUser();
+      }
+
+      async function delHist(id) {
+        if (!confirm('確定要刪除這筆紀錄嗎？')) return;
+        S.history = S.history.filter((h) => h.id !== id);
+        await dbDelHistory(id);
+        toast('✅ 紀錄已單筆刪除');
+        renderDev();
+        if (document.getElementById('pg-hist').classList.contains('active'))
+          renderHist();
+        if (document.getElementById('pg-user').classList.contains('active'))
+          renderUser();
+      }
+
+      async function clearHistory() {
+        if (!S.history.length) {
+          toast('目前沒有紀錄可清除');
+          return;
+        }
+        if (!confirm('確定要清除所有使用紀錄嗎？\n此操作無法復原。')) return;
+        S.history = [];
+        await dbClearHistory();
+        toast('✅ 已清除所有紀錄');
+        renderDev();
+        renderUser();
+        if (document.getElementById('pg-hist').classList.contains('active'))
+          renderHist();
+      }
+
+      function go(pg) {
+        ['login', 'user', 'hist', 'dev'].forEach((p) => {
+          const el = document.getElementById('pg-' + p);
+          if (el) {
+            el.classList.remove('active');
+            el.style.display = 'none';
+          }
+          const nav = document.getElementById('nav-' + p);
+          if (nav) nav.classList.remove('active');
+        });
+        const targetPg = document.getElementById('pg-' + pg);
+        if (targetPg) {
+          targetPg.classList.add('active');
+          targetPg.style.display = 'flex';
+        }
+        const targetNav = document.getElementById('nav-' + pg);
+        if (
+          targetNav &&
+          document.getElementById('main-nav').style.display !== 'none'
+        )
+          targetNav.classList.add('active');
+        if (pg === 'user') renderUser();
+        if (pg === 'hist') renderHist();
+        if (pg === 'dev') renderDev();
+      }
+
+      function tick() {
+        const d = new Date(),
+          h = d.getHours(),
+          m = d.getMinutes();
+        document.getElementById('clock').textContent =
+          h + ':' + (m < 10 ? '0' : '') + m;
+      }
+      tick();
+      setInterval(tick, 15000);
+
+      // ─── 啟動 ───
+      (async () => {
+        try {
+          await dbLoad();
+        } catch (e) {
+          console.error('Supabase 載入失敗', e);
+          toast('⚠️ 資料庫連線失敗，請重新整理');
+        }
+        document.getElementById('loading-overlay').style.display = 'none';
+        S.currentUser = loadSession();
+        if (S.currentUser) await checkAutoAdd();
+        initApp();
+      })();
+    </script>
+  </body>
+</html>
