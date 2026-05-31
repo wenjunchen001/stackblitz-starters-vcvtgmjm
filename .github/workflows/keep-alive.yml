@@ -1,19 +1,18 @@
-yamlname: Supabase Keep Alive
-
+name: Supabase Keep Alive
+ 
 on:
   schedule:
     - cron: '0 0 * * 1,4'
   workflow_dispatch:
-
+ 
 jobs:
   keep-alive:
     runs-on: ubuntu-latest
     steps:
       - name: Ping Supabase
         run: |
-          CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+          curl -s -o /dev/null \
             -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-            "${{ secrets.SUPABASE_URL }}/rest/v1/")
-          echo "Status: $CODE"
-          echo "Done - Supabase pinged successfully"
+            "${{ secrets.SUPABASE_URL }}/rest/v1/"
+          echo "Supabase pinged successfully"
