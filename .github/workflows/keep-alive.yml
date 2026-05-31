@@ -2,10 +2,8 @@ name: Supabase Keep Alive
 
 on:
   schedule:
-    # 每週一、四 UTC 00:00 執行（台灣時間 08:00）
-    # 7天內執行兩次，確保不會被暫停
     - cron: '0 0 * * 1,4'
-  workflow_dispatch: # 允許手動觸發
+  workflow_dispatch:
 
 jobs:
   keep-alive:
@@ -15,11 +13,13 @@ jobs:
       - name: Ping Supabase Database
         run: |
           response=$(curl -s -o /dev/null -w "%{http_code}" \
-            "${{ secrets.SUPABASE_URL }}/rest/v1/?apikey=${{ secrets.SUPABASE_ANON_KEY }}")
+            "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/ping" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
           
           echo "Response status: $response"
           
-          if [ "$response" -ge 200 ] && [ "$response" -lt 300 ]; then
+          if [ "$response" -ge 200 ] && [ "$response" -lt 500 ]; then
             echo "✅ Supabase is alive!"
           else
             echo "⚠️ Unexpected response: $response"
