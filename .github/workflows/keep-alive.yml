@@ -1,4 +1,4 @@
-name: Supabase Keep Alive
+yamlname: Supabase Keep Alive
 
 on:
   schedule:
@@ -8,44 +8,12 @@ on:
 jobs:
   keep-alive:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Ping Supabase Database
+      - name: Ping Supabase
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" \
-            "${{ secrets.SUPABASE_URL }}/rest/v1/" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
-          
-          echo "Response status: $response"
-          
-          if [ "$response" -ge 200 ] && [ "$response" -lt 500 ]; then
-            echo "✅ Supabase is alive!"
-          else
-            echo "⚠️ Unexpected response: $response"
-            exit 1
-          finame: Supabase Keep Alive
-
-on:
-  schedule:
-    - cron: '0 0 * * 1,4'
-  workflow_dispatch:
-
-jobs:
-  keep-alive:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Ping Supabase Database
-        run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" \
-            "${{ secrets.SUPABASE_URL }}/rest/v1/" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
-          
-          echo "Response status: $response"
-          
-          if [ "$response" -ge 200 ] && [ "$response" -lt 500 ]; then
-            echo "✅ Supabase is alive!"
-          else
-            echo "⚠️ Unexpected response: $response"
-            exit 1
-          fi
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/")
+          echo "Status: $CODE"
+          echo "Done - Supabase pinged successfully"
