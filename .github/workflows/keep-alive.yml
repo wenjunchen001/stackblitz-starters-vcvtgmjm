@@ -1,14 +1,22 @@
 name: Supabase Keep Alive
 
+name: Supabase Keep Alive
+
 on:
-schedule:
-- cron: '0 0 /3 *'
-workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 1,4'
+  workflow_dispatch:
 
 jobs:
-ping:
-runs-on: ubuntu-latest
-steps:
-- name: Ping Supabase
-run: |
-curl -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/app_state?select=*" \ -H "apikey: ${{ secrets.SUPABASE_KEY }}" \ -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}"
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase Database
+        run: |
+          curl -s -X POST \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"pinged_at": "now()"}' \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/keep_alive"
+          echo "Database pinged successfully"
