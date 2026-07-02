@@ -1,6 +1,5 @@
 name: Supabase Keep Alive
 
-
 on:
   schedule:
     - cron: '0 0 * * 1,4'
@@ -10,12 +9,10 @@ jobs:
   keep-alive:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase Database
+      - name: Ping Supabase
         run: |
-          curl -s -X POST \
+          curl -s -o /dev/null \
             -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d '{"pinged_at": "now()"}' \
-            "${{ secrets.SUPABASE_URL }}/rest/v1/keep_alive"
-          echo "Database pinged successfully"
+            "${{ secrets.SUPABASE_URL }}/rest/v1/"
+          echo "Supabase pinged successfully"
